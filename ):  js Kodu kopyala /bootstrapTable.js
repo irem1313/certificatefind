@@ -1,21 +1,30 @@
-// Bootstrap ve DataTables'ı dinamik olarak başlatır
+// DataTable nesnesini globalde tutalım ki kontrol edebilelim
+let table;
+
 function fillTable(data) {
     const tableBody = document.getElementById("tableBody");
-    tableBody.innerHTML = ''; // Tabloyu temizler
+    if (!tableBody) return;
+
+    // Eğer tablo daha önce başlatılmışsa, verileri güncellemek için yok et
+    if ($.fn.DataTable.isDataTable('#example')) {
+        $('#example').DataTable().destroy();
+    }
+
+    tableBody.innerHTML = ''; 
 
     data.forEach(item => {
         const row = document.createElement("tr");
 
         const rowData = [
-            item.classificationSociety,
-            item.approvalGroup,
-            item.certificateNumber,
-            item.productName,
-            item.productType,
-            item.expiryDate,
-            item.company,
-            item.countryRegion,
-            `<a href="${item.certificateLink}" target="_blank">View Certificate</a>`
+            item.classificationSociety || "-",
+            item.approvalGroup || "-",
+            item.certificateNumber || "-",
+            item.productName || "-",
+            item.productType || "-",
+            item.expiryDate || "-",
+            item.company || "-",
+            item.countryRegion || "-",
+            `<a href="${item.certificateLink || '#'}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>`
         ];
 
         rowData.forEach(text => {
@@ -27,7 +36,16 @@ function fillTable(data) {
         tableBody.appendChild(row);
     });
 
-    // Sayfa yüklendiğinde örnek verileri çalıştır
+    // DataTable'ı başlat ve değişkene ata
+    table = $('#example').DataTable({
+        "responsive": true,
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Turkish.json"
+        }
+    });
+}
+
+// 1. Sayfa ilk açıldığında örnek verileri yükle
 document.addEventListener("DOMContentLoaded", function() {
     const exampleData = [
         {
@@ -51,65 +69,18 @@ document.addEventListener("DOMContentLoaded", function() {
             company: "Onur Marine",
             countryRegion: "Netherlands",
             certificateLink: "#"
-        },
-        {
-            classificationSociety: "DNV",
-            approvalGroup: "Safety",
-            certificateNumber: "DNV-SA-442",
-            productName: "Life Raft",
-            productType: "Inflatable",
-            expiryDate: "2026-03-12",
-            company: "Global Yachting",
-            countryRegion: "Germany",
-            certificateLink: "#"
         }
     ];
 
     fillTable(exampleData);
 });
 
-function fillTable(data) {
-    const tableBody = document.getElementById("tableBody");
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = ''; 
-
-    data.forEach(item => {
-        const row = document.createElement("tr");
-
-        const rowData = [
-            item.classificationSociety,
-            item.approvalGroup,
-            item.certificateNumber,
-            item.productName,
-            item.productType,
-            item.expiryDate,
-            item.company,
-            item.countryRegion,
-            `<a href="${item.certificateLink}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>`
-        ];
-
-        rowData.forEach(text => {
-            const td = document.createElement("td");
-            td.innerHTML = text;
-            row.appendChild(td);
-        });
-
-        tableBody.appendChild(row);
-    });
-
-    // DataTable'ı başlat
-    $('#example').DataTable({
-        "responsive": true,
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Turkish.json"
-        }
-    });
-}
-}
-
-// JSON verisini dinleyin ve tabloyu doldurun
+// 2. Dışarıdan (postMessage ile) yeni veri gelirse tabloyu güncelle
 window.addEventListener('message', function(event) {
-    const data = JSON.parse(event.data);
-    fillTable(data);
+    try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        fillTable(data);
+    } catch (e) {
+        console.error("Veri işleme hatası:", e);
+    }
 });
